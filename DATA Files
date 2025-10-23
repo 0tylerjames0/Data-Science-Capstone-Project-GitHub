@@ -1,0 +1,29 @@
+import os, pathlib, subprocess, sys
+
+# Ensure folders
+for p in ["data/ETT","data/ElectricityLoadDiagrams20112014","data/PEMS_SF"]:
+    pathlib.Path(p).mkdir(parents=True, exist_ok=True)
+
+# ETT (kept in repo too; this just fills if you forgot)
+if not os.path.exists("data/ETT/ETTh1.csv"):
+    !wget -q https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv -O data/ETT/ETTh1.csv
+if not os.path.exists("data/ETT/ETTm1.csv"):
+    !wget -q https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTm1.csv -O data/ETT/ETTm1.csv
+
+# Electricity Load Diagrams (too large for GitHub; always fetch)
+eld_parq = "data/ElectricityLoadDiagrams20112014/LD2011_2014.parquet"
+if not os.path.exists(eld_parq):
+    !pip -q install ucimlrepo
+    from ucimlrepo import fetch_ucirepo
+    import pandas as pd
+    eld = fetch_ucirepo(id=321)
+    df = eld.data.features if getattr(eld.data,"features",None) is not None else pd.DataFrame()
+    if getattr(eld.data,"targets",None) is not None:
+        df = pd.concat([df, eld.data.targets], axis=1)
+    df.to_parquet(eld_parq)
+
+# PeMS (upload if <100MB; else fetch)
+pems_zip = "data/PEMS_SF/traffic_hourly_dataset.zip"
+if not os.path.exists(pems_zip):
+    !wget -q "https://zenodo.org/records/3898445/files/traffic_hourly_dataset.zip?download=1" -O {pems_zip}
+    !unzip -q -o {pems_zip} -d data/PEMS_SF/
